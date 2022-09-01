@@ -1,8 +1,36 @@
-model PingerPonger {
+model DartSim {
 	
-	protocol PingPongProtocol {
-		in message ping()
-		out message pong()
+
+	protocol AdapterInterfaceToSimulatorProtocol {
+		out message isFinished()
+		out message readForwardThreatSensor(cells: unsigned[1])
+		out message readForwardTargetSensor(cells: unsigned[1])
+		out message readForwardThreatSensorForObservation(cells: unsigned[1], numOfObservations: unsigned[1])
+		out message readForwardTargetSensorForObservation(cells: unsigned[1], numOfObservations: unsigned[1])
+		out message step(tactics: TacticList[1], decisionTimeMsec: double[1]) // decisionTimeMsec defualts to 0
+		out message getResults()
+		out message getScreenOutput()
+		out message getParameters()
+		out message getState()
+
+
+		in message sendIsFinished(finished: bool[1])
+		in message sendReadForwardThreatSensor(readings: `std::vector<bool>`[1])
+		in message sendReadForwardTargetSensor(readings: `std::vector<bool>`[1])
+		in message sendReadForwardThreatSensorForObservation(readings: `std::vector<std::vector<bool>>`[1])
+		in message sendReadForwardTargetSensorForObservation(readings: `std::vector<std::vector<bool>>`[1])
+		in message sendStep(detection: bool[1]) // decisionTimeMsec defualts to 0
+		in message sendResults(simulationResults: SimulationResults[1])
+		in message sendScreenOutput(screenOutput: string[1])
+		in message sendParameters(simulationParams: SimulationParams[1])
+		in message sendState(teamState: TeamState[1])
+	}
+	
+	capsule AdapterInterface {
+		
+
+
+
 	}
 
 	capsule Pinger {
