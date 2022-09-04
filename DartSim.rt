@@ -3,15 +3,16 @@ model DartSim {
 
 	protocol AdapterInterfaceToSimulatorProtocol {
 		out message isFinished()
-		out message readForwardThreatSensor(cells: unsigned[1])
-		out message readForwardTargetSensor(cells: unsigned[1])
-		out message readForwardThreatSensorForObservation(cells: unsigned[1], numOfObservations: unsigned[1])
-		out message readForwardTargetSensorForObservation(cells: unsigned[1], numOfObservations: unsigned[1])
+		out message readForwardThreatSensor(cells: `unsigned`[1])
+		out message readForwardTargetSensor(cells: `unsigned`[1])
+		out message readForwardThreatSensorForObservation(cells: `unsigned`[1], numOfObservations: `unsigned`[1])
+		out message readForwardTargetSensorForObservation(cells: `unsigned`[1], numOfObservations: `unsigned`[1])
 		out message step(tactics: TacticList[1], decisionTimeMsec: double[1]) // decisionTimeMsec defualts to 0
 		out message getResults()
 		out message getScreenOutput()
 		out message getParameters()
 		out message getState()
+		out message createSimulator()
 
 
 		in message sendIsFinished(finished: bool[1])
@@ -19,20 +20,72 @@ model DartSim {
 		in message sendReadForwardTargetSensor(readings: `std::vector<bool>`[1])
 		in message sendReadForwardThreatSensorForObservation(readings: `std::vector<std::vector<bool>>`[1])
 		in message sendReadForwardTargetSensorForObservation(readings: `std::vector<std::vector<bool>>`[1])
-		in message sendStep(detection: bool[1]) // decisionTimeMsec defualts to 0
+		in message sendStep(detection: bool[1]) 
 		in message sendResults(simulationResults: SimulationResults[1])
 		in message sendScreenOutput(screenOutput: string[1])
 		in message sendParameters(simulationParams: SimulationParams[1])
 		in message sendState(teamState: TeamState[1])
 	}
+
+	protocol SimulatorToForwardTargetSensor {
+		out message createForwardTargetSensor(simulatorParams: SimulationParams[1])
+		out message readForwardTargetSensor()
+
+	}
 	
 	capsule AdapterInterface {
+		port adapterManager: ~AdapterInterfaceToSimulatorProtocol
+		port log: RTSLibrary.Log
+
+		statemachine {
+				initial initialStateAdapterInterfaceCapsule
+				state running
+
+				transition {
+					from initialStateAdapterInterfaceCapsule
+					to running
+					action `
+						log.log("[AdapterInterface] from initial state to running state");
+					`
+				}
+		}	
 		
 
 
 
 	}
 
+	capsule ForwardTargetSensor {
+		port simulatorPort: ~SimulatorToForwardTargetSensor
+		port log: RTSLibrary.Log
+
+		statemachine {
+			initial initialStateForwardTargetSensor
+			state waitingStateForwardTargetSensor
+			state runningForwardTargetSensor
+
+				transition {
+					from initialStateForwardTargetSensor
+					to waitingStateForwardTargetSensor
+					action `
+						log.log("[ForwardTargetSensor] from initial state to waiting state");
+					`
+				}
+
+				transition {
+					from waitingStateForwardTargetSensor
+					to runningForwardTargetSensor
+					triggers from simulatorPort on createForwardTargetSensor
+					action `
+						log.log("[ForwardTargetSensor] from waiting state to running state");
+					`
+				}
+
+		}
+			
+
+
+	}
 	capsule Pinger {
 		port pingPort : ~PingPongProtocol
 		port log: RTSLibrary.Log
