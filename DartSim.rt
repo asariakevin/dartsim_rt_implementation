@@ -1,4 +1,61 @@
 model DartSim {
+	class RandomSeed {
+
+	}
+	class Sensor {
+
+	}
+
+    class Coordinate {
+        public attribute x: int[1]
+	    public attribute y: int[1]
+    }
+		class LongRangeSensorParams {
+			public attribute threatSensorFPR: `double`[1] = 0.10
+			public attribute threatSensorFNR: `double`[1] = 0.15
+			public attribute targetSensorFPR: `double`[1] = 0.10
+			public attribute targetSensorFNR: `double`[1] = 0.15
+		}
+
+
+		class DownwardLookingSensorParams {
+			public attribute  targetDetectionFormationFactor: `double`[1] = 1.2
+			public attribute  targetSensorRange: `unsigned`[1] = 4
+		}
+
+		class ThreatParams {
+			public attribute  destructionFormationFactor: `double`[1] = 1.5
+			public attribute  threatRange: `unsigned`[1] = 3 // in altitude levels
+		}
+
+
+		class SimulationParams {
+			public attribute  mapSize: `unsigned`[1] = 40
+			public attribute  squareMap: `bool`[1] = false
+			public attribute  altitudeLevels: `unsigned`[1] = 4
+			public attribute  changeAltitudeLatencyPeriods: `unsigned`[1] = 1
+			public attribute  optimalityTest: `bool`[1] = false
+			public attribute  longRangeSensor: `LongRangeSensorParams`[1]
+			public attribute  downwardLookingSensor: `DownwardLookingSensorParams`[1]
+			public attribute  threat: `ThreatParams`[1]
+		}
+
+		class SimulationResults {
+			public attribute  destroyed: `bool`[1]
+			public attribute  whereDestroyed: Coordinate[1]
+			public attribute  targetsDetected: `unsigned`[1]
+			public attribute  missionSuccess: `bool`[1]
+			public attribute  decisionTimeAvg: `double`[1]
+			public attribute  decisionTimeVar: `double`[1]
+		}
+
+
+		class TeamState {
+			public attribute  position: Coordinate[1]
+			public attribute  directionX: int[1]
+			public attribute  directionY: int[1]
+			public attribute  config: TeamConfiguration[1]
+		}
 	
 
 	protocol AdapterInterfaceToSimulatorProtocol {
@@ -30,6 +87,8 @@ model DartSim {
 	protocol SimulatorToForwardTargetSensor {
 		out message createForwardTargetSensor(simulatorParams: SimulationParams[1])
 		out message readForwardTargetSensor()
+
+		in message sendReadForwardTargetSensor(sensedForwardTargetSensor: bool[1])
 
 	}
 	
