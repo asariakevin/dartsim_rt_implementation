@@ -1,8 +1,133 @@
 model DartSim {
 	class RandomSeed {
+		protected attribute instance: `std::unique_ptr<RandomSeed>`[1]
+		protected attribute uniform: `std::uniform_int_distribution<>`[1]
+		protected attribute randomGenerator: `std::default_random_engine`[1]
+
+
+		public operation RandomSeed():  `` `
+			randomGenerator(std::random_device()())
+		`
+
+		public operation getInstance():  `RandomSeed&` `
+			if (instance.get() == nullptr) {
+				instance.reset(new RandomSeed);
+			}
+			return *instance;
+		`
+
+		public static operation getNextSeed():  `int` `
+			return getInstance().getSeed();
+		`
+
+		public operation seed(seed: int[1]):  `void` `
+			getInstance().randomGenerator.seed(seed);
+		`
+
+		public operation getSeed():  `int` `
+			return uniform(randomGenerator);
+		`
 
 	}
+
 	class Sensor {
+		protected attribute fpr: `double`[1]
+		protected attribute fnr: `double`[1]
+		protected attribute uniform: `std::uniform_real_distribution`[1]
+		protected attribute randomGenerator: `std::default_random_engine`[1]
+
+		public operation Sensor(falsePositiveRate: `double`[1], falseNegativeRate: `double`[1]): `` `
+			 fpr(falsePositiveRate);
+			 fnr(falseNegativeRate);
+			randomGenerator.seed(RandomSeed::getNextSeed());
+		`
+		public operation sense(truth: `bool`[1]): `bool` `
+			bool result = truth;
+			double random = uniform(randomGenerator);
+			if (truth && random <= fnr) {
+				result = false;
+			} else if (!truth && random <= fpr) {
+				result = true;
+			}
+
+			return result;
+		`
+
+	}
+	class TargetSensor {
+		protected attribute range: `double`[1]
+		protected attribute detectionFormationFactor: `double`[1]
+		protected attribute uniform: `std::uniform_real_distribution<>`[1]
+		protected attribute randomGenerator: `std::default_random_engine`[1]
+
+		public operation TargetSensor(range: `double`[1], detectionFormationFactor: `double`[1]): `` `
+			  range(range);
+			  detectionFormationFactor(detectionFormationFactor);
+			  randomGenerator(RandomSeed::getNextSeed());
+		`
+		public operation sense(config: TeamConfiguration[1], targetPresent: `bool`[1]): `bool` `
+			bool detected = false;
+			if (targetPresent) {
+				double probOfDetection = getProbabilityOfDetection(config);
+
+				double random = uniform(randomGenerator);
+				detected = (random <= probOfDetection);
+			}
+			return detected;
+		`
+		public operation getProbabilityOfDetection(config: TeamConfiguration[1]): `double` `
+			double probOfDetection =
+					((config.formation == TeamConfiguration::Formation::LOOSE) ? 1.0 : 1 / detectionFormationFactor)
+					* max(0.0, range - config.altitudeLevel) / range;
+
+			// ECM reduces the prob of detection
+			if (config.ecm) {
+				probOfDetection *= 0.25;
+			}
+
+			return probOfDetection;
+		`
+
+
+	}
+
+	class DeterministicTargetSensor {
+		protected attribute range: `double`[1]
+		protected attribute detectionFormationFactor: `double`[1]
+		protected attribute uniform: `std::uniform_real_distribution<>`[1]
+		protected attribute randomGenerator: `std::default_random_engine`[1]
+
+		public operation DeterministicTargetSensor(range: `double`[1], detectionFormationFactor: `double`[1]): `` `
+			  range(range);
+			  detectionFormationFactor(detectionFormationFactor);
+			  randomGenerator(RandomSeed::getNextSeed());
+		`
+		public operation sense(config: TeamConfiguration[1], targetPresent: `bool`[1]): `bool` `
+			bool detected = false;
+			if (targetPresent) {
+				double probOfDetection = getProbabilityOfDetection(config);
+
+				double random = uniform(randomGenerator);
+				detected = (random <= probOfDetection);
+			}
+			return detected;
+		`
+		public operation getProbabilityOfDetection(config: TeamConfiguration[1]): `double` `
+			double effectiveRange = range;
+			if (config.formation == TeamConfiguration::Formation::TIGHT) {
+				effectiveRange = range / detectionFormationFactor;
+			}
+
+			// ECM reduces the range of detection
+			if (config.ecm) {
+				effectiveRange *= 0.75;
+			}
+
+			double probOfDetection = ((effectiveRange - config.altitudeLevel) > 0.0) ? 1.0 : 0.0;
+
+			return probOfDetection;
+		`
+
 
 	}
 
@@ -55,6 +180,18 @@ model DartSim {
 			public attribute  directionX: int[1]
 			public attribute  directionY: int[1]
 			public attribute  config: TeamConfiguration[1]
+		}
+
+		class TeamConfiguration {
+			public attribute enum Formation { "LOOSE", "TIGHT" }
+
+			public attribute  altitudeLevel: `unsigned`[1]
+			public attribute  formation: Formation[1]
+			public attribute  ecm: `bool`[1]
+			public attribute  ttcIncAlt: `unsigned`[1]
+			public attribute  ttcDecAlt: `unsigned`[1]
+			public attribute  ttcIncAlt2: `unsigned`[1]
+			public attribute  ttcDecAlt2: `unsigned`[1]
 		}
 	
 
