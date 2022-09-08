@@ -29,6 +29,45 @@ model DartSim {
 		`
 
 	}
+		class Threat {
+			protected attribute  range: double[1]
+			protected attribute  destructionFormationFactor: double[1]
+			protected attribute  uniform: `std::uniform_real_distribution<>`[1]
+			protected attribute  randomGenerator: `std::default_random_engine`[1]
+
+			public operation Threat(range: `double`[1], destructionFormationFactor: `double`[1]): `` `
+			  range(range);
+			  destructionFormationFactor(destructionFormationFactor);
+			  randomGenerator(RandomSeed::getNextSeed());
+
+			`
+
+			public operation isDestroyed(threatEnv: `RealEnvironment`[1],config: `TeamConfiguration`[1], location: `Coordinate`[1]): `bool` `
+					bool destroyed = false;
+					bool threat = threatEnv.isObjectAt(location);
+					if (threat) {
+						double probOfDestruction = getProbabilityOfDestruction(config);
+
+						double random = uniform(randomGenerator);
+						destroyed = (random <= probOfDestruction);
+					}
+					return destroyed;
+			`
+
+			public operation getProbabilityOfDestruction(config: TeamConfiguration): `double` `
+					double probOfDestruction =
+							((config.formation == TeamConfiguration::Formation::LOOSE) ? 1.0 : (1.0 / destructionFormationFactor))
+							* max(0.0, range - config.altitudeLevel) / range;
+
+					// ECM reduces the prob of destruction
+					if (config.ecm) {
+						probOfDestruction *= 0.25;
+					}
+
+					return probOfDestruction;
+			`
+
+		}
 
 	class Sensor {
 		protected attribute fpr: `double`[1]
