@@ -54,7 +54,7 @@ model DartSim {
 					return destroyed;
 			`
 
-			public operation getProbabilityOfDestruction(config: TeamConfiguration): `double` `
+			public operation getProbabilityOfDestruction(config: TeamConfiguration[1]): `double` `
 					double probOfDestruction =
 							((config.formation == TeamConfiguration::Formation::LOOSE) ? 1.0 : (1.0 / destructionFormationFactor))
 							* max(0.0, range - config.altitudeLevel) / range;
@@ -67,6 +67,47 @@ model DartSim {
 					return probOfDestruction;
 			`
 
+		}
+
+		class RealEnvironment {
+			public operation  populate(size: Coordinate[1],numOfObjects: `unsigned`[1]): `void` `
+					this->size = size;
+					envMap.clear();
+
+					std::default_random_engine gen(RandomSeed::getNextSeed());
+					std::uniform_int_distribution<> unifX(0, size.x - 1);
+					std::uniform_int_distribution<> unifY(0, size.y - 1);
+
+					while (numOfObjects > 0) {
+						unsigned x = unifX(gen);
+						unsigned y = unifY(gen);
+						while (envMap[Coordinate(x,y)]) {
+							x = unifX(gen);
+							y = unifY(gen);
+						}
+						envMap[Coordinate(x,y)] = true;
+						numOfObjects--;
+					}
+			`
+			public operation  getSize(): `Coordinate` `
+					return size;
+			`
+			public operation  isObjectAt(location: Coordinate[1]): `bool` `
+					bool isThere = false;
+					const auto it = envMap.find(location);
+					if (it != envMap.end()) {
+						isThere = it->second;
+					}
+
+					return isThere;
+			`
+			public operation  setAt(location: Coordinate[1],  objectPresent: `bool`[1]): `void` `
+					envMap[location] = objectPresent;
+			`
+
+
+			protected attribute  size: Coordinate[1]
+			protected attribute  envMap: `std::map<Coordinate, bool>`
 		}
 
 	class Sensor {
@@ -238,6 +279,10 @@ model DartSim {
 			public attribute  ttcDecAlt2: `unsigned`[1]
 		}
 	
+	class TacticList {
+
+		public attribute tacticList: `std::set<std::string>`[1]
+	}
 
 	protocol AdapterInterfaceToSimulatorProtocol {
 		out message isFinished()
@@ -253,14 +298,14 @@ model DartSim {
 		out message createSimulator()
 
 
-		in message sendIsFinished(finished: bool[1])
+		in message sendIsFinished(finished: `bool`[1])
 		in message sendReadForwardThreatSensor(readings: `std::vector<bool>`[1])
 		in message sendReadForwardTargetSensor(readings: `std::vector<bool>`[1])
 		in message sendReadForwardThreatSensorForObservation(readings: `std::vector<std::vector<bool>>`[1])
 		in message sendReadForwardTargetSensorForObservation(readings: `std::vector<std::vector<bool>>`[1])
-		in message sendStep(detection: bool[1]) 
+		in message sendStep(detection: `bool`[1]) 
 		in message sendResults(simulationResults: SimulationResults[1])
-		in message sendScreenOutput(screenOutput: string[1])
+		in message sendScreenOutput(screenOutput: `string`[1])
 		in message sendParameters(simulationParams: SimulationParams[1])
 		in message sendState(teamState: TeamState[1])
 	}
@@ -269,7 +314,7 @@ model DartSim {
 		out message createForwardTargetSensor(simulatorParams: SimulationParams[1])
 		out message readForwardTargetSensor()
 
-		in message sendReadForwardTargetSensor(sensedForwardTargetSensor: bool[1])
+		in message sendReadForwardTargetSensor(sensedForwardTargetSensor: `bool`[1])
 
 	}
 	
@@ -327,8 +372,7 @@ model DartSim {
 
 	}
 	top capsule Top {
-		part pinger : Pinger
-		part ponger : Ponger
-		connect ponger.pongPort to pinger.pingPort
+		part forwardTargetSensor : ForwardTargetSensor
+		part adapterInterface : AdapterInterface
 	}
 }
