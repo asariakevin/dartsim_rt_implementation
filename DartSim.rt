@@ -135,12 +135,12 @@ model DartSim {
         public attribute x: int[1]
 	    public attribute y: int[1]
     }
-		class LongRangeSensorParams {
-			public attribute threatSensorFPR: `double`[1] = 0.10
-			public attribute threatSensorFNR: `double`[1] = 0.15
-			public attribute targetSensorFPR: `double`[1] = 0.10
-			public attribute targetSensorFNR: `double`[1] = 0.15
-		}
+    class LongRangeSensorParams {
+    	public attribute threatSensorFPR: `double`[1] = 0.10
+    	public attribute threatSensorFNR: `double`[1] = 0.15
+    	public attribute targetSensorFPR: `double`[1] = 0.10
+    	public attribute targetSensorFNR: `double`[1] = 0.15
+    }
 
 
 		class DownwardLookingSensorParams {
@@ -182,8 +182,13 @@ model DartSim {
 			public attribute  config: TeamConfiguration[1]
 		}
 
+		class Formation {
+			public attribute LOOSE: int[1] = 0
+			public attribute TIGHT: int[1] = 1
+
+		}
+
 		class TeamConfiguration {
-			public attribute enum Formation { "LOOSE", "TIGHT" }
 
 			public attribute  altitudeLevel: `unsigned`[1]
 			public attribute  formation: Formation[1]
@@ -282,80 +287,6 @@ model DartSim {
 
 
 	}
-	capsule Pinger {
-		port pingPort : ~PingPongProtocol
-		port log: RTSLibrary.Log
-		port timer: RTSLibrary.Timing
-
-		statemachine {
-			initial init
-			state delay
-			
-			state playing {
-				entry `
-					if ( pingPort.ping().send() ) {
-						log.log("ping sent!");
-					} else {
-						log.log("Error sending Ping!");
-					}	
-				`
-			}
-			
-			transition {
-				from init 
-				to playing
-				action `
-					log.log("Starting game!");
-				`
-			}
-			
-			transition {
-				from playing
-				to delay
-				triggers from pingPort on pong
-				action `
-					log.log("[Pinger] Pong received!");
-					timer.informIn(UMLRTTimespec(1,0));
-				`
-			}
-
-			transition {
-				from delay
-				to playing
-				triggers from timer on timeout
-			}		
-		}
-	}	
-	
-	capsule Ponger {
-		port pongPort : PingPongProtocol
-		port log: RTSLibrary.Log
-
-		statemachine {
-			initial init
-			state playing
-			
-			transition { 
-				from init 
-				to playing
-			}	
-								
-			transition {
-				from playing
-				to playing
-				triggers from pongPort on ping
-				action `
-					log.log("[Ponger] Ping received!");
-					if (pongPort.pong().send()){
-						log.log("[Ponger] Pong sent!");
-					} else {
-						log.log("[Ponger] Error sending Pong!");
-					}
-				`
-			}
-		}
-	}
-
 	top capsule Top {
 		part pinger : Pinger
 		part ponger : Ponger
