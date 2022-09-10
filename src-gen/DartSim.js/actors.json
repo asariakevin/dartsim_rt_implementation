@@ -1,0 +1,11 @@
+{
+	"Top[0]" : {
+		"mode":  "forked"
+	},
+	"Top[0].forwardTargetSensor[0]" : {
+		"mode":  "forked"
+	},
+	"Top[0].adapterInterface[0]" : {
+		"mode":  "forked"
+	}
+}

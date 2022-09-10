@@ -283,6 +283,21 @@ model DartSim {
 
 		public attribute tacticList: `std::set<std::string>`[1]
 	}
+		class Route  {
+			protected attribute coordinates: `std::vector<Coordinate>`[1]
+			public operation Route(origin: Coordinate[1], directionX: double[1], directionY: double[1], length: `unsigned`[1]): `` `
+					// operate in doubles so that fractional directions can be used
+					double x = origin.x;
+					double y = origin.y;
+
+					while (length > 0) {
+						coordinates.push_back(Coordinate(x, y));
+						x += directionX;
+						y += directionY;
+						length--;
+					}
+			` 
+		}
 
 	protocol AdapterInterfaceToSimulatorProtocol {
 		out message isFinished()
@@ -337,6 +352,42 @@ model DartSim {
 		
 
 
+
+	}
+
+	capsule Simulator {
+		port adapterInterfacePort: AdapterInterfaceToSimulatorProtocol
+		port simulatorToForwardTargetSensorPort: ~SimulatorToForwardTargetSensor
+		port log: RTSLibrary.Log
+
+		statemachine {
+				initial initialStateSimulatorCapsule
+				state waiting
+				state running
+
+				transition {
+					from initialStateSimulatorCapsule
+					to waiting
+					action `
+						log.log("[Simulator] from initial state to waiting state");
+					`
+				}
+				transition {
+					from waiting
+					to running
+					action `
+						log.log("[Simulator] from initial state to running state");
+					`
+				}
+				transition {
+					from running
+					to running
+					triggers from adapterInterfacePort on readForwardTargetSensor
+					action `
+						log.log("[Simulator] (readForwardTargetSensor)");
+					`
+				}
+		}	
 
 	}
 

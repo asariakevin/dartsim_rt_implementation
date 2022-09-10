@@ -1,0 +1,17 @@
+{
+	"name": "DartSim",
+	"main": "index.js",
+	"engines": {
+		"node": ">= 4.3.2"
+	},
+	"dependencies": {
+		"comedy": "^2.1.5",
+		"xstate": "^4.19.1",
+		"rtpoet-rts": "file:./rtpoet-rts"
+	},
+	"scripts": {
+		"preinstall": "npm --prefix ./rtpoet-rts install",
+		"start": "node index.js",
+		"node": "./node_modules/.bin/comedy-node"
+	}
+}

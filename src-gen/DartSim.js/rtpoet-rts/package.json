@@ -1,0 +1,13 @@
+{
+	"name": "rtpoet-rts",
+	"version": "1.0.0",
+	"description": "RTPoet Runtime System",
+	"author": "Karim Jahed",
+	"license": "EPL",
+	"engines": {
+		"node": ">= 4.3.2"
+	},
+	"dependencies": {
+		"nanotimer": "^0.3.15"
+	}
+}
