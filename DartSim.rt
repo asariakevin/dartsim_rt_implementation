@@ -655,7 +655,7 @@ model DartSim {
 		out message getScreenOutput()
 		out message getParameters()
 		out message getState()
-		out message createSimulator()
+		out message createSimulator(argc: int[1], argv: `char**`)
 
 
 		in message sendIsFinished(finished: `bool`[1])
