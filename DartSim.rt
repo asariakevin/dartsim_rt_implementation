@@ -724,9 +724,10 @@ model DartSim {
 				transition {
 					from waiting
 					to running
-					triggers from adapterInterfacePort on createSimulator
+					triggers from adapterInterfacePort on createSimulator //TODO: add corresponding sent message in adapter interface with correct arguments
 					action `
-							dart::sim::SimulationParams simParams;
+							log.log("[Simulator] from initial state to running state");
+							SimulationParams simParams;
 							bool autoRange = false;
 							unsigned numThreats = 6;
 							unsigned numTargets = 4;
@@ -839,8 +840,8 @@ model DartSim {
 							targetEnv.setAt(Coordinate(7,2), true);
 							targetEnv.setAt(Coordinate(7,5), true);
 						#else
-							dart::sim::RealEnvironment threatEnv;
-							dart::sim::RealEnvironment targetEnv;
+							RealEnvironment threatEnv;
+							RealEnvironment targetEnv;
 
 							if (simParams.squareMap) {
 
@@ -857,7 +858,8 @@ model DartSim {
 
 
 							// generate route
-							dart::sim::Route route;
+							//TODO: change route to use coordinates
+							Route route;
 
 						#if FIXED2DSPACE
 							unsigned x = 2;
@@ -884,7 +886,7 @@ model DartSim {
 									}
 								}
 							} else {
-								route = dart::sim::Route(dart::sim::Coordinate(0,0), 1.0, 0.0, simParams.mapSize);
+								route = Route(Coordinate(0,0), 1.0, 0.0, simParams.mapSize);
 							}
 						#endif
 
@@ -905,15 +907,16 @@ model DartSim {
 
 							// instantiate adaptation manager
 							// replace seeds that would have been consumed by the sensor and threat used in the old utility fc
-							dart::sim::RandomSeed::getNextSeed();
-							dart::sim::RandomSeed::getNextSeed();
-							dart::sim::RandomSeed::getNextSeed();
-							dart::sim::RandomSeed::getNextSeed();
+							RandomSeed::getNextSeed();
+							RandomSeed::getNextSeed();
+							RandomSeed::getNextSeed();
+							RandomSeed::getNextSeed();
 
 							unsigned missionSuccessTargetThreshold = numTargets / 2.0;
-							return new SimulatorImpl(simParams, threatEnv, targetEnv,
+							simulatorImp = new SimulatorImpl(simParams, threatEnv, targetEnv,
 									route, missionSuccessTargetThreshold);
-						log.log("[Simulator] from initial state to running state");
+
+							//TODO: start sensors
 					`
 				}
 				transition {
