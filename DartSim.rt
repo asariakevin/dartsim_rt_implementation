@@ -672,9 +672,11 @@ model DartSim {
 
 	protocol SimulatorToForwardTargetSensor {
 		out message createForwardTargetSensor(simulatorParams: SimulationParams[1])
-		out message readForwardTargetSensor()
+		out message readForwardTargetSensorGivenCells(environment: RealEnvironment[1], route: Route[1])
+		out message readForwardTargetSensorGivenCellsAndNumberOfObservations(environment: RealEnvironment[1], route: Route[1], numberOfObservations: `unsigned`[1])
 
-		in message sendReadForwardTargetSensor(sensedForwardTargetSensor: `bool`[1])
+		in message sendReadForwardTargetSensorGivenCells(sensedForwardTargetSensor: `std::vector<bool>`[1])
+		in message sendReadForwardTargetSensorGivenCellsAndNumberOfObservations(sensedForwardTargetSensor: `std::vector<std::vector<bool>>`[1])
 
 	}
 	
@@ -934,6 +936,7 @@ model DartSim {
 	capsule ForwardTargetSensor {
 		port simulatorPort: ~SimulatorToForwardTargetSensor
 		port log: RTSLibrary.Log
+		protected attribute forwardTargetSensor: `Sensor*`[1]
 
 		statemachine {
 			initial initialStateForwardTargetSensor
@@ -954,6 +957,55 @@ model DartSim {
 					triggers from simulatorPort on createForwardTargetSensor
 					action `
 						log.log("[ForwardTargetSensor] from waiting state to running state");
+						log.log("[ForwardTargetSensor] instantiating forwardTargetSensor");
+						forwardTargetSensor = new Sensor(simulatorParams.longRangeSensor.targetSensorFPR,
+			simulatorParams.longRangeSensor.targetSensorFNR);
+
+					`
+				}
+				transition {
+					from runningForwardTargetSensor
+					to runningForwardTargetSensor
+					triggers from simulatorPort on readForwardTargetSensorGivenCells
+					action `
+						log.log("[ForwardTargetSensor] Reading Forward target sensor(given cells only)");
+					    std::vector<bool> sensed;
+
+					    for (const auto& pos : route) { //TODO: change route to use coordinates
+					    	if (pos.isInsideRect(environment.getSize())) {
+					    		sensed.push_back(forwardTargetSensor->sense(environment.isObjectAt(pos)));
+					    	} else {
+					    		break; // the route is a straight line and the environment is convex
+					    	}
+					    }
+
+					    return sensed; //TODO
+
+					`
+				}
+				transition {
+					from runningForwardTargetSensor
+					to runningForwardTargetSensor
+					triggers from simulatorPort on readForwardTargetSensorGivenCellsAndNumberOfObservations
+					action `
+						log.log("[ForwardTargetSensor] Reading Forward target sensor(given cells and number of observations)");
+	                    std::vector<std::vector<bool>> sensed;
+
+
+	                    for (const auto& pos : route) { //TODO
+	                    	if (pos.isInsideRect(environment.getSize())) {
+	                    		std::vector<bool> values;
+	                    		for (unsigned c = 0; c < numOfObservations; c++) {
+	                    			values.push_back(pSensor->sense(environment.isObjectAt(pos)));
+	                    		}
+	                    		sensed.push_back(values);
+	                    	} else {
+	                    		break; // the route is a straight line and the environment is convex
+	                    	}
+	                    }
+
+	                    return sensed; //TODO
+
 					`
 				}
 
